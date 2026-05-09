@@ -199,28 +199,38 @@ parallel `sanity_demos` table. Defer until needed.
 
 ## Batch procedure (loop)
 
-For N leads at once, the canonical pattern is one fresh `claude -p`
-spawn per lead. From a plain shell, not from inside an interactive
-session:
+For N leads at once, run `scripts/design_loop.py`. It mirrors
+`/generator/scripts/design_loop.py`: one fresh `claude -p` spawn per
+lead, no shared context across leads, idempotent on resume.
 
 ```bash
 export CF_API_TOKEN=...
 export CF_ACCOUNT_ID=9af9dd6feb9e75d20059b1b815178adb
-for id in 547 568 612 ; do
-  claude -p "design lead $id via sanity. Read CLAUDE.md, follow the per-lead procedure end to end, and exit when the live URL is up." \
-    --output-format text
-done
+
+python3 scripts/design_loop.py --max-leads 5      # next 5 candidates
+python3 scripts/design_loop.py --leads 547,568    # explicit list
+python3 scripts/design_loop.py --resume           # continue in_flight first
+python3 scripts/design_loop.py --dry-run          # print candidate list, exit
 ```
 
-Each spawn has clean context, reads CLAUDE.md fresh, follows the
-procedure, exits. Failures don't cascade. State persists in
-`data/sanity-state.json`. Re-running the loop on already-deployed leads
-is a fast no-op (idempotency guard hits early).
+What it does:
 
-Future improvement: a `scripts/design_loop.mjs` that picks candidates
-from `../scan/data/registry.db` `demo_candidates` view automatically,
-rate-limit-detects, and resumes via state file. The bash loop above is
-the minimum viable orchestrator and works today.
+- Picks `business_id`s from `../scan/data/registry.db` `demos` table
+  with `status='built'` (i.e., `/generator` has already produced an
+  audit + harvested assets + App.tsx for the lead, so step 1 of the
+  per-lead procedure has work to reuse).
+- Skips leads already in `data/sanity-state.json` (deployed) and any
+  in the loop's `completed` / `failed` set.
+- Spawns `claude -p` per lead with a self-contained prompt that points
+  at this CLAUDE.md and the per-lead procedure.
+- Watches stdout for rate-limit signals; stops the loop and leaves
+  `in_flight` set so `--resume` continues.
+- Writes a per-lead log to `data/design_loop.log` and loop state to
+  `data/design_loop.state.json`. PID lockfile at
+  `data/design_loop.lock` prevents concurrent runs.
+
+Failures don't cascade between leads. Re-running on already-deployed
+leads is a fast no-op (idempotency guard in `deploy.mjs` hits early).
 
 ## What lives where
 
