@@ -1,0 +1,105 @@
+{
+  "_comment": "Content brief for Cafe Ryser (lead 547). Hand-extracted from generator/web/leads/547/App.tsx and generator/data/copy/547.facts.json. Authored once in a Claude session per lead; consumed by scripts/import-from-generator.mjs to populate Sanity. Asset filenames refer to files under generator/data/repo/d/<hash>/ (hash looked up from scan/data/registry.db).",
+  "businessId": 547,
+  "name": "Cafe Konditorei Ryser",
+  "tagline": "Ein einheimisches, freundliches und unkompliziertes Lokal, im Herzen von Schwyz.",
+  "intro": "Unter einem Dach vereinen wir drei Handwerke: Konditorei, Patisserie und Confiserie. Was Sie bei uns finden, kommt aus eigener Werkstatt; was wir zukaufen, beziehen wir mit Bedacht, von Häusern, deren Handwerk wir achten.",
+  "address": {
+    "street": "Schmiedgasse 3 / PF 428",
+    "zip": "6430",
+    "city": "Schwyz"
+  },
+  "phone": "041 811 31 20",
+  "email": "cafe.ryser@bluewin.ch",
+  "owners": "Paul und Heidi Ryser-Danioth",
+  "locationHint": "Wir liegen zentral in Schwyz, unterhalb des Hauptplatzes, oberhalb des öffentlichen Parkplatz «Brüöl».",
+  "handwerke": [
+    { "name": "Konditorei", "description": "Alle unsere Produkte werden nach traditionellem Handwerk in der hauseigenen Backstube von Fachleuten frisch zubereitet." },
+    { "name": "Patisserie", "description": "Kuchen, Tartes und Kleingebäck, täglich frisch aus dem Haus Ryser." },
+    { "name": "Confiserie", "description": "Kommen Sie vorbei und lassen Sie sich von unserer kompetenten Bedienung die verschiedenen Genüsse aufzeigen." }
+  ],
+  "team": {
+    "title": "Paul und Heidi Ryser-Danioth",
+    "body": "Inhaber, Backstube, Service: eine Familie, ein Lokal. Die richtige Mischung aus zeitgemässer Einrichtung und dem Zurückgreifen auf die «guten alten Zeiten», bei uns am Hauptplatz Schwyz, mit Panoramablick auf die Mythen.",
+    "photoFile": "team.jpg",
+    "caption": "Paul und Heidi, in der eigenen Backstube"
+  },
+  "features": [
+    { "title": "Felchlin-Schokolade", "eyebrow": "Couverture", "body": "Produziert im Hause Ryser, mit feinster Felchlin-Schokolade.", "attribution": "Felchlin · Ibach SZ · Schweizer Couverture seit 1908. Eine Manufaktur, deren Werk in Sichtweite unserer Backstube steht." },
+    { "title": "Schwyzer-Örgeli", "eyebrow": "Hausspezialität", "body": "Aus dem eigenen Sortiment, benannt nach dem regionalen Volksinstrument, gefertigt nach Hausrezept im Schwyzer Atelier mit Felchlin-Couverture. Immer aktuell, und als Geschenk immer das Richtige.", "attribution": "Aus eigener Herstellung in Schwyz." },
+    { "title": "Sonnenseite des Lebens", "eyebrow": "Terrasse", "body": "Vielgelobt, südlich exponiert, mit Blick auf das Bergpanorama der Mythen. Lassen auch Sie sich von der herrlichen Schwyzer Gegend verzaubern, bei einer belebenden Tasse Kaffee, einer Patisserie aus dem Hause oder einem Stück Kuchen." }
+  ],
+  "hours": [
+    { "label": "Montag bis Freitag", "value": "07:00 bis 18:00" },
+    { "label": "Samstag", "value": "07:00 bis 17:30" },
+    { "label": "Sonntag und Feiertage", "value": "07:30 bis 17:30" }
+  ],
+  "specialHours": [
+    { "date": "Ostertage", "value": "alle offen" },
+    { "date": "24. Dezember", "value": "bis 16:00 offen" },
+    { "date": "25. Dezember", "value": "geschlossen" },
+    { "date": "26. Dezember", "value": "offen" },
+    { "date": "Silvester", "value": "bis 16:00 offen" },
+    { "date": "Neujahr", "value": "ab 09:30 offen" }
+  ],
+  "hoursNote": "Reservationen und Bestellungen nehmen wir ausschliesslich per Telefon entgegen. Wir bearbeiten diesbezüglich keine E-Mail. Vielen Dank für Ihr Verständnis.",
+  "menuSections": [
+    {
+      "key": "fruehstueck",
+      "title": "Frühstückskarte",
+      "headline": "Beginnen Sie den Tag im Hause Ryser.",
+      "pdfFile": "fruehstueck.pdf",
+      "pdfLabel": "PDF · Frühstückskarte herunterladen",
+      "order": 10,
+      "extras": [
+        { "name": "3-Minuten-Ei", "price": "Fr. 2.50" },
+        { "name": "Spiegelei", "price": "Fr. 5.00" },
+        { "name": "Gekochtes Ei", "price": "Fr. 4.00" },
+        { "name": "4 Salamitranchen", "price": "Fr. 5.00" },
+        { "name": "2 Schinkentranchen", "price": "Fr. 5.00" },
+        { "name": "2 Scheiben Käse", "price": "Fr. 5.00" }
+      ],
+      "highlights": [
+        { "name": "Klein", "description": "1 Tasse Kaffee oder Tee, 1 Gipfeli, 1 Brötli, 1 Konfitüre, 20g Butter.", "price": "Fr. 9.80", "order": 10 },
+        { "name": "Gross", "description": "Portion Kaffee oder Tee, 1 Gipfeli, 1 Brötli, Brot, 2 Konfitüren, 20g Butter, 1 Käsli, 1 kleiner Orangensaft.", "price": "Fr. 18.00", "order": 20 },
+        { "name": "Fit for Fun", "description": "1 Birchermüesli, 1 Vollkorngipfel, 2dl frischer Orangensaft.", "price": "Fr. 11.50", "order": 30 },
+        { "name": "Sonntags-Frühstück", "description": "Portion Kaffee oder Tee, 1 Gipfeli, 1 Brötli, Brot, Zopf, 2 Blatt Schinken, 1 kl. Birchermüesli, 1 Käsli, 20g Butter, 2 Konfitüren, 1 kleiner Orangensaft.", "price": "Fr. 23.00", "note": "auch werktags", "order": 40 }
+      ]
+    },
+    {
+      "key": "speisekarte",
+      "title": "Speisekarte",
+      "headline": "Mittag und kleine Karte.",
+      "subtitle": "Mittagsmenü Mo bis Fr, 11:00 bis 14:30",
+      "pdfFile": "speisekarte.pdf",
+      "pdfLabel": "PDF · vollständige Speisekarte herunterladen",
+      "order": 20,
+      "highlights": [
+        { "name": "Salatteller", "category": "Suppen & Salate", "price": "Fr. 15.00", "order": 5 },
+        { "name": "Tagesteller", "category": "Mittagsmenü", "price": "Fr. 12.50", "order": 10 },
+        { "name": "Schnitzel mit Pommes", "category": "Hauptgerichte", "price": "Fr. 18.00", "order": 20 },
+        { "name": "Cordon bleu", "category": "Hauptgerichte", "price": "Fr. 18.00", "order": 21 },
+        { "name": "Toast Hawaii", "category": "Toasts", "price": "Fr. 11.00", "order": 30 }
+      ]
+    },
+    {
+      "key": "coupes",
+      "title": "Coupes",
+      "headline": "Zweiundzwanzig Coupes. Eine Hausspezialität.",
+      "intro": "Aromen einzeln: Vanille, Erdbeer, Chocolat, Mocca, Mandarin, Joghurt. Eine Kugel Fr. 3.50, mit Rahm Fr. 4.50. Zwei Kugeln Fr. 7.00, mit Rahm Fr. 8.50.",
+      "pdfFile": "coupes.pdf",
+      "pdfLabel": "PDF · Coupes-Karte herunterladen",
+      "order": 30,
+      "highlights": [
+        { "name": "Coupe Ryser", "description": "Vanille-, Erdbeer- und Mandarin-Glacé, Früchte, Rahm.", "price": "Fr. 9.80", "featured": true, "order": 10 },
+        { "name": "Wienercafé", "description": "Vanille-Glacé, heisser Espresso, Rahm.", "price": "Fr. 9.00", "order": 25 },
+        { "name": "Schwarzwälder", "description": "Vanille- und Chocolat-Glacé, Kirschen, Rahm, Choco-Späne.", "price": "Fr. 9.80", "order": 20 },
+        { "name": "Belle Hélène", "description": "Vanille-Glacé, Birnen, Choco-Sauce, Rahm.", "price": "Fr. 9.80", "order": 30 }
+      ]
+    }
+  ],
+  "assets": {
+    "hero": { "file": "hero.jpg", "alt": "Cafe Konditorei Ryser in Schwyz" },
+    "logo": { "file": "logo.png", "alt": "Ryser Logo" }
+  }
+}

@@ -171,44 +171,74 @@ flow is:
 
 ## Production wiring
 
+### URL naming convention
+
+Cloudflare Pages project names become the `<name>.pages.dev` subdomain.
+**The CF project name MUST be the lead's `url_hash`** from
+`../scan/data/registry.db` (8 hex chars, derived via
+`HMAC-SHA256(NOPAGE_DEMO_SECRET, str(business_id))[:8]`).
+
+Rationale: leads who saw a `/generator` demo at
+`nilpage.github.io/nopage/d/<hash>/` see the same hash at
+`<hash>.pages.dev` for the Sanity track. The hash carries the brand
+trust we already built. **Never use the lead id (e.g., `sanity-547`),
+the framework name (`sanity-`), or any prefix in the CF project name.**
+For Ryser (lead 547): hash `a1d44df0` → `a1d44df0.pages.dev`.
+
+GitHub repo names are internal and don't appear in the URL; current
+convention is `nilpage/sanity-<lead_id>` (the lead id is fine here for
+operator orientation), but the future orchestrator may switch to
+`nilpage/<hash>` for full consistency.
+
+### Ryser (lead 547) artifacts
+
 - GitHub repo: `nilpage/sanity-547` (public). Push to `main` triggers
   Cloudflare Pages build. Build command: `pnpm install --frozen-lockfile
   && pnpm build`. Output: `out/`. Node 22.
-- Cloudflare Pages project: `sanity-547`, account
-  `9af9dd6feb9e75d20059b1b815178adb`. Live at `sanity-547.pages.dev`.
-  Production env vars set on the CF project: `NEXT_PUBLIC_SANITY_PROJECT_ID`,
-  `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SANITY_API_VERSION`.
-- CF Pages deploy hook: id `46ec3b29-7d62-4d62-b8df-e8a5569298fc`.
+- Cloudflare Pages project: `a1d44df0`, account
+  `9af9dd6feb9e75d20059b1b815178adb`. Live at `https://a1d44df0.pages.dev/`.
+  Production env vars set on the CF project:
+  `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`,
+  `NEXT_PUBLIC_SANITY_API_VERSION`.
+- CF Pages deploy hook: id `1b76eae3-aff8-477f-ac4f-9bb709063ab1`.
   POST to `https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/<id>`
   triggers a build on `main`. Unauthenticated.
-- Sanity webhook: id `A3TEsubCgSnCwdUj`, fires on create/update/delete of
+- Sanity webhook: id `tyFQ1spsE6yYtpbn`, fires on create/update/delete of
   `cafe`, `menuSection`, `menuHighlight`, `aktuell`, only on published
   documents (`includeDrafts: false`). Targets the CF deploy hook URL.
   Round-trip from publish to live: roughly 60–120 s (Sanity webhook
   delivery + CF Pages build).
 - Sanity CORS origins for the live Studio: `http://localhost:3000`,
-  `https://sanity-547.pages.dev`, `https://*.sanity-547.pages.dev`.
+  `https://a1d44df0.pages.dev`, `https://*.a1d44df0.pages.dev`.
+  (Stale `sanity-547.pages.dev` entries from the original deploy are
+  harmless and can be removed later via the Manage API.)
 
 ## Per-lead deploy script (TODO)
 
 `scripts/deploy.mjs` should encapsulate the per-lead chain we ran by
 hand for Ryser:
 
-1. `gh repo create nilpage/sanity-<lead>` from the lead's directory.
-2. `git push -u origin main`.
-3. CF Pages: `POST /accounts/{id}/pages/projects` with `source.type:
-   github`, build_config (pnpm/out/22), and the three Sanity env vars.
-4. CF Pages: `POST /accounts/{id}/pages/projects/<name>/deploy_hooks` to
-   register the webhook URL we hand back to Sanity.
+1. Look up `url_hash` from `../scan/data/registry.db` `demos` table
+   (`select url_hash from demos where business_id = ?`). Use it as the
+   CF Pages project name (and therefore the `<hash>.pages.dev`
+   subdomain).
+2. `gh repo create nilpage/sanity-<lead_id>` (repo name is internal;
+   the lead id is fine here). Push the lead's directory.
+3. CF Pages: `POST /accounts/{id}/pages/projects` with `name=<hash>`,
+   `source.type=github`, build_config (pnpm/out/22), and the three
+   Sanity env vars.
+4. CF Pages: `POST /accounts/{id}/pages/projects/<hash>/deploy_hooks`
+   to register the webhook URL.
 5. Sanity: `POST https://<project>.api.sanity.io/v2025-02-19/hooks/projects/<project>`
    with `type=document`, `rule.on=[create,update,delete]`,
    `rule.filter` for the four schema types, `rule.projection="{}"`,
    `httpMethod=POST`, targeting the CF deploy hook URL.
-6. Sanity CORS: `POST` `add-cors-origin` for the new pages.dev domain
-   (and any custom domain). Done via `mcp__Sanity__add_cors_origin` in
-   this conversation; the script equivalent is the management API call.
-7. Trigger first build: `POST /accounts/{id}/pages/projects/<name>/deployments`.
-8. Print the live URL.
+6. Sanity CORS: `POST` `add-cors-origin` for `https://<hash>.pages.dev`
+   and `https://*.<hash>.pages.dev`. Done via
+   `mcp__Sanity__add_cors_origin` in this conversation; the script
+   equivalent is the management API call.
+7. Trigger first build: `POST /accounts/{id}/pages/projects/<hash>/deployments`.
+8. Print the live URL: `https://<hash>.pages.dev/`.
 
 The CF GitHub App must be installed on the `nilpage` org once
 (`https://github.com/apps/cloudflare-pages` → Configure → All
