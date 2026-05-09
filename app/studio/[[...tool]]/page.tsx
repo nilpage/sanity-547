@@ -1,30 +1,12 @@
-"use client";
+import StudioClient from "./StudioClient";
 
-import dynamic from "next/dynamic";
-
-import config from "../../../sanity.config";
-
-const NextStudio = dynamic(
-  () => import("next-sanity/studio").then((m) => m.NextStudio),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          fontFamily: "system-ui, sans-serif",
-          color: "#666",
-        }}
-      >
-        Studio wird geladen…
-      </div>
-    ),
-  },
-);
+// Static export emits one HTML at /studio; Sanity Studio handles deeper
+// paths client-side. Cloudflare Pages rewrites all /studio/* URLs to this
+// same HTML via public/_redirects.
+export function generateStaticParams() {
+  return [{ tool: [] }];
+}
 
 export default function StudioPage() {
-  return <NextStudio config={config} />;
+  return <StudioClient />;
 }

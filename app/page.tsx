@@ -97,7 +97,7 @@ function detectDisplayStyle(highlights: Highlight[]): DisplayStyle {
   return "list";
 }
 
-export const revalidate = 60;
+export const dynamic = "force-static";
 
 export default async function HomePage() {
   if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
