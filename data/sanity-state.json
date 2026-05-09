@@ -1,0 +1,15 @@
+{
+  "leads": {
+    "547": {
+      "hash": "a1d44df0",
+      "businessId": 547,
+      "name": "Cafe Konditorei Ryser",
+      "sanityProjectId": "p16k3ee6",
+      "cafeId": "c61d4798-d86d-40f8-8907-3685049e7b23",
+      "cfProjectName": "a1d44df0",
+      "cfDeployHookId": "1b76eae3-aff8-477f-ac4f-9bb709063ab1",
+      "sanityWebhookId": "tyFQ1spsE6yYtpbn",
+      "deployedAt": "2026-05-09T09:33:00.000Z"
+    }
+  }
+}

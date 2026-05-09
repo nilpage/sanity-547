@@ -115,25 +115,112 @@ This is not optional.
 | User says | You do |
 |-----------|--------|
 | "design lead 547 via sanity" / "sanity design 547" | per-lead procedure (below) on id 547 |
-| "iterate sanity ryser" | reload current Ryser site, eyeball, fix what's off, re-validate |
-| "validate sanity" | run both validators, report findings |
-| "seed sanity ryser" | re-run `scripts/seed-assets.mjs` (idempotent) |
+| "design the next N via sanity" | run the bash loop (below) over N candidates from `demo_candidates`, one fresh `claude -p` spawn per lead |
+| "iterate sanity 547" | reload the lead's live URL, eyeball + run validators, fix what's off, push (auto-rebuild fires) |
+| "validate sanity 547" | set the lead's project ID env var, run `node scripts/validate-content.mjs` and `node scripts/validate-visual.mjs` |
+| "redeploy sanity 547" | re-run `node scripts/deploy.mjs --lead=547 --force` (idempotent steps skip; --force re-imports content) |
 
 ## Per-lead procedure (sanity track)
 
-To be filled in once the per-lead orchestrator is built. Currently the
-flow is:
+Triggered by "design lead `<id>` via sanity". Walk this in a fresh
+session, one lead at a time, deeply (matching `/generator`'s rule).
 
-1. `pnpm sanity login` and `pnpm sanity init --create-project` (one-time
-   per lead, EU residency).
-2. Set `NEXT_PUBLIC_SANITY_PROJECT_ID` in `.env.local`.
-3. Run `node scripts/seed-assets.mjs` (uploads assets, patches docs,
-   validates content).
-4. Run `pnpm dev`, check `/` and `/studio` in a browser. Iterate the
-   design until both validators are clean and the user has eyeballed.
-5. (TODO) Deploy to Vercel via `vercel deploy --prod`.
-6. (TODO) Record the demo row in the registry, mirroring
-   `../generator/scripts/record_demo.py`.
+### 1. Read what `/generator` already produced for this lead
+
+The audit work is already done by `/generator`. Don't repeat it.
+
+- `../generator/data/copy/<id>.facts.json` — business name, category,
+  email, snapshot, image URLs.
+- `../generator/web/leads/<id>/App.tsx` — the validated content arrays
+  (HANDWERKE, FRUEHSTUECK, COUPES, etc.) and prose (intro, team body,
+  feature blurbs, hours, holidays). This is the SOURCE OF TRUTH for
+  what content goes on the demo. Don't reinvent.
+- `../generator/data/repo/d/<hash>/` — harvested assets: hero.jpg,
+  team.jpg, logo.png, PDFs. Look up the hash via:
+  `select url_hash from demos where business_id = <id>` against
+  `../scan/data/registry.db`.
+
+### 2. Hand-author the content brief at `data/leads/<id>.json`
+
+Mirror `data/leads/547.json` (Ryser) as the canonical example. Keys:
+
+- Top-level: `businessId`, `name`, `tagline`, `intro`, `address`,
+  `phone`, `email`, `owners`, `locationHint`, `hoursNote`.
+- `handwerke`, `team`, `features` from the App.tsx HANDWERKE / TEAM /
+  Felchlin/Schwyzer-Örgeli/Terrasse blocks.
+- `hours`, `specialHours` from HOURS / HOLIDAYS arrays.
+- `menuSections[]`: one per FRUEHSTUECK / SPEISEKARTE / COUPES section,
+  with `key`, `title`, `headline`, `pdfFile`, `pdfLabel`, optional
+  `subtitle` and `intro`, optional `extras[]`, and `highlights[]` (4
+  for list mode, 4 categories for grid mode, featured + 3 cards for
+  cards mode — the validator enforces these counts).
+- `assets`: hero + logo file names (referring to files in
+  `../generator/data/repo/d/<hash>/`).
+
+Rules while authoring:
+- No em / en dashes anywhere (replace with commas, periods, "bis"
+  for ranges).
+- Match the lead's primary language exactly.
+- Voice fidelity: keep dialect, exclamation marks, regional words
+  ("z'mörgele", "Kaffeklatsch", "Gluscht") verbatim.
+- Faithful to facts: never invent prices, services, awards, hours.
+
+### 3. Deploy
+
+```bash
+CF_API_TOKEN=...  CF_ACCOUNT_ID=9af9dd6feb9e75d20059b1b815178adb \
+  node scripts/deploy.mjs --lead=<id>
+```
+
+The script chains: Sanity project (EU) + dataset + CORS + content
+import + validators + CF Pages project (named `<hash>`) + deploy hook
++ Sanity webhook + first build. About 3-5 minutes per lead. Idempotent
+on re-run (reads `data/sanity-state.json` to skip already-done steps).
+
+### 4. Visual review
+
+```bash
+node scripts/validate-visual.mjs --url=https://<hash>.pages.dev/
+```
+
+Mandatory before declaring done. The Playwright + claude -p reviewer
+flags baseline misalignment, grid orphans, overflow, contrast issues,
+mobile breakage. Fix anything it surfaces; push fixes to the shared
+template repo (one commit triggers a rebuild for ALL active leads, but
+that's fine — the template fix benefits everyone).
+
+### 5. Record state
+
+The deploy script writes to `data/sanity-state.json`. No external
+registry update needed unless you want to mirror into
+`../scan/data/registry.db`'s `demos` table — that table is `/generator`-
+specific; sanity-track demos can live in their own state file or a
+parallel `sanity_demos` table. Defer until needed.
+
+## Batch procedure (loop)
+
+For N leads at once, the canonical pattern is one fresh `claude -p`
+spawn per lead. From a plain shell, not from inside an interactive
+session:
+
+```bash
+export CF_API_TOKEN=...
+export CF_ACCOUNT_ID=9af9dd6feb9e75d20059b1b815178adb
+for id in 547 568 612 ; do
+  claude -p "design lead $id via sanity. Read CLAUDE.md, follow the per-lead procedure end to end, and exit when the live URL is up." \
+    --output-format text
+done
+```
+
+Each spawn has clean context, reads CLAUDE.md fresh, follows the
+procedure, exits. Failures don't cascade. State persists in
+`data/sanity-state.json`. Re-running the loop on already-deployed leads
+is a fast no-op (idempotency guard hits early).
+
+Future improvement: a `scripts/design_loop.mjs` that picks candidates
+from `../scan/data/registry.db` `demo_candidates` view automatically,
+rate-limit-detects, and resumes via state file. The bash loop above is
+the minimum viable orchestrator and works today.
 
 ## What lives where
 
@@ -213,36 +300,36 @@ operator orientation), but the future orchestrator may switch to
   (Stale `sanity-547.pages.dev` entries from the original deploy are
   harmless and can be removed later via the Manage API.)
 
-## Per-lead deploy script (TODO)
+## Multi-tenant architecture
 
-`scripts/deploy.mjs` should encapsulate the per-lead chain we ran by
-hand for Ryser:
+One shared template repo (`nilpage/sanity-547`, kept name for now)
+serves as the source for ALL leads' CF Pages projects. The repo is
+generic: it reads `NEXT_PUBLIC_SANITY_PROJECT_ID` etc. at build time
+and renders that project's content.
 
-1. Look up `url_hash` from `../scan/data/registry.db` `demos` table
-   (`select url_hash from demos where business_id = ?`). Use it as the
-   CF Pages project name (and therefore the `<hash>.pages.dev`
-   subdomain).
-2. `gh repo create nilpage/sanity-<lead_id>` (repo name is internal;
-   the lead id is fine here). Push the lead's directory.
-3. CF Pages: `POST /accounts/{id}/pages/projects` with `name=<hash>`,
-   `source.type=github`, build_config (pnpm/out/22), and the three
-   Sanity env vars.
-4. CF Pages: `POST /accounts/{id}/pages/projects/<hash>/deploy_hooks`
-   to register the webhook URL.
-5. Sanity: `POST https://<project>.api.sanity.io/v2025-02-19/hooks/projects/<project>`
-   with `type=document`, `rule.on=[create,update,delete]`,
-   `rule.filter` for the four schema types, `rule.projection="{}"`,
-   `httpMethod=POST`, targeting the CF deploy hook URL.
-6. Sanity CORS: `POST` `add-cors-origin` for `https://<hash>.pages.dev`
-   and `https://*.<hash>.pages.dev`. Done via
-   `mcp__Sanity__add_cors_origin` in this conversation; the script
-   equivalent is the management API call.
-7. Trigger first build: `POST /accounts/{id}/pages/projects/<hash>/deployments`.
-8. Print the live URL: `https://<hash>.pages.dev/`.
+Per lead:
+- One Sanity project (EU residency, free tier).
+- One CF Pages project named `<hash>`, sourcing the shared repo, env
+  vars pointing at the lead's Sanity project ID.
+- One CF deploy hook, one Sanity webhook tying them together.
+- One row in `data/sanity-state.json` recording all the IDs.
 
-The CF GitHub App must be installed on the `nilpage` org once
-(`https://github.com/apps/cloudflare-pages` → Configure → All
-repositories). One-time per org, not per lead.
+A code-level template fix pushed to `nilpage/sanity-547`'s `main`
+auto-rebuilds every active lead's CF Pages project. That's a feature:
+one commit fixes everyone. Be careful with breaking changes — visual
+regression should run on at least one lead before pushing template
+changes. Check `data/sanity-state.json` for live URLs.
+
+## One-time setup (already done for the current account)
+
+- Cloudflare Pages GitHub App installed on `nilpage` org with all-
+  repos access. (`https://github.com/apps/cloudflare-pages` → Configure)
+- `pnpm sanity login` ran once; auth token cached at
+  `~/.config/sanity/config.json`.
+- `CF_API_TOKEN` + `CF_ACCOUNT_ID` env vars set in your shell.
+
+`scripts/deploy.mjs` reads the Sanity token from the config file and
+the CF credentials from env. No interactive steps.
 
 ## Failure modes already encountered
 
