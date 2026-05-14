@@ -1,357 +1,246 @@
 # CLAUDE.md, sanity-generator
 
-Operating mode + hard rules for the agent designing per-lead demos in this
-project. Read this before any UI / schema / content work in
-`/home/pi/projects/nopage/sanity-generator/`.
+The brief for the fresh Claude session that designs each per-lead demo. Read
+it once at the start of the lead. Trust your own judgment for the rest.
 
 ## What this project is
 
-Sister track to `../generator/` (React static demos) and `../wp-generator/`
+Sister to `../generator/` (React static demos) and `../wp-generator/`
 (WordPress demos). Same lead source (`../scan/data/registry.db`), same
-quality bar (Awwwards-Honors hand-designed look), but a different
-substrate: a Next.js + Sanity site per lead, where the baker can edit
-content in a German Studio at `/studio` after the demo converts.
+quality bar, different substrate: each lead gets a Next.js + Sanity
+site they can edit themselves in a German Studio at `/studio` after the
+demo converts.
 
 The umbrella `nopage/` is not a git repo. This directory is its own git
-repo with its own remote story.
+repo with its own remote.
 
-## Reading order before designing
+## What you're selling
 
-The full design quality bar lives in `../generator/docs/agent/design.md`.
-**Read it before any design work.** The same rules apply here, just
-expressed through a Sanity schema instead of hand-typed `App.tsx` arrays.
-The audit protocol in `../generator/docs/agent/audit.md` is the same.
+A demo that converts because it is, in this order:
 
-This file only adds the Sanity-specific deltas to those rules.
+1. **Editable.** The owner can change words, swap photos, add news, tweak
+   hours. They feel ownership when they log into `/studio`. Field names
+   and labels in their world, not ours.
+2. **Beautiful.** Hits the bar in `../generator/docs/agent/design.md`.
+   No template tells. No filler. No AI register.
+3. **Informative.** A real replacement, not a teaser. Every meaningful
+   thing on their current site is on the demo, in better form.
 
-## Hard rules, do not break
+A demo that fails on any of those three doesn't sell. Most "good
+enough" demos fail on (3) by skipping the audit, or on (1) by leaving
+Studio in a state where the owner sees Café-Informationen while
+running a hair salon.
 
-These rules are why visual bugs ship. If you skip any, expect the user to
-catch the failure and ask you to redo the work.
+## Read before designing
 
-1. **Browser-test every UI / CSS change before reporting it done.** Curl
-   alone does not count. Either the user loads the page in a real browser
-   and confirms, or `node scripts/validate-visual.mjs` passes. CSS that
-   "should align by my math" is the textbook failure mode (Toast Hawaii
-   dots, 2026-05-09): math without rendering check is shipping uninspected
-   work.
+- `../generator/docs/agent/design.md` — design quality bar, soul-read,
+  customer-target audience, anti-patterns, type pairings. Same rules
+  as /generator. Read it once.
+- `../generator/docs/agent/audit.md` — site-audit protocol. The audit
+  output `../generator/data/copy/<id>.audit.md` is the source of truth
+  for content. If it exists, read it. If it doesn't, you walk audit.md
+  and write it yourself; the protocol is the same as /generator's,
+  because the underlying lead is the same.
 
-2. **Run both validators before saying done.**
+This file deliberately doesn't repeat those. It only covers what's
+specific to the Sanity substrate.
+
+## How to think about a lead
+
+You are not filling a template. You are designing a demo for one
+specific small business.
+
+The schemas in `sanity/schemaTypes/` were shaped for Café Konditorei
+Ryser, the first lead. They are a **starting point**, not a template
+of what every lead must contain. Most fields are optional. For a
+copyshop, you'll keep `business name + intro + services + hours +
+contact` and drop the team / menuSection / specialHours machinery
+entirely. For a hairdresser, the `menuSection` + `menuHighlight`
+structure works for treatments, but the labels say "Menü-Abschnitt"
+and "Hausspezialität" — which is wrong in a salon's Studio. **Rename
+them in the schema files** for that lead before deploying, so the
+salon owner sees their own world.
+
+Editing schemas per-lead is fine. The shared template
+(`nilpage/sanity-547`, kept name) is just where the working copy
+lives. If your lead's schemas diverge enough from Ryser's, that's the
+right outcome — the owner's Studio is the product.
+
+Authoring the demo is a design exercise, not a data-entry exercise.
+Walk the audit deeply; pick sections that fit the lead's content;
+strip what doesn't apply; build a brief; deploy; review the rendered
+result.
+
+## Non-negotiables
+
+The few rules that exist because breaking them ends the sale:
+
+- **Contact email is `deine-app@proton.me`.** Always. Never the
+  operator's real address. Never the lead's published address in a
+  form's `mailto:` target — that's a contact link only, not a submit
+  endpoint.
+- **No em dashes (—) or en dashes (–) in rendered content.** Use
+  commas, periods, semicolons, parens, hyphen-minus, or "bis" for
+  ranges. Applies to schema labels, helper text, content briefs, and
+  anything that ends up in the rendered HTML. Does NOT apply to this
+  file or the agent docs.
+- **No invented content.** Hours, prices, owner names, awards,
+  suppliers — only what the audit found. If the lead's site doesn't
+  say their hours, the demo doesn't either.
+- **No AI register, no Unsplash, no AI imagery.** Voice fidelity
+  from the audit's verbatim quotes. Photos from the lead's own site
+  or typography-only fallback.
+- **EU data residency on every Sanity project.** Swiss DSG / GDPR.
+  Already wired in `deploy.mjs`; don't bypass it.
+- **Publish-target org is `nilpage`.** Never autodetected from `git
+  config` or env.
+- **Sanity Studio chrome in the lead's primary language.** German
+  default for Swiss leads. Romandie leads need French; add the locale
+  plugin for that project.
+
+## Per-lead procedure
+
+1. **Audit.** Read `../generator/data/copy/<id>.audit.md` if it
+   exists. If not, walk `../generator/docs/agent/audit.md`. The pre-
+   design checklist in audit.md is the same here.
+2. **Shape the schema** to fit this lead. Rename labels and helper
+   text so the owner's Studio reads naturally. Drop fields that don't
+   apply; add fields the lead clearly needs (e.g. a `gallery` for a
+   photo-heavy lead, a `services` array for a service business).
+3. **Author the brief** at `data/leads/<id>.json` matching whatever
+   shape the page expects. The Ryser brief at `data/leads/547.json`
+   is one example, not the contract.
+4. **Update `app/page.tsx`** if the section set diverges from Ryser's.
+   The current page renders Hero → Intro → Handwerke → Team → Menus
+   → Features → Hours → Visit; change the order or set as the lead
+   demands. The render is yours to shape.
+5. **Deploy:**
    ```bash
-   node scripts/validate-content.mjs
-   node scripts/validate-visual.mjs   # when implemented
+   node scripts/deploy.mjs --lead=<id>
    ```
-   Content validator must exit 0. Visual validator findings must be
-   addressed or explicitly waived in the response.
+6. **Open the live URL** and look at it. Run
+   `node scripts/validate-visual.mjs --url=<live url>` for an
+   automated review. If something is off at the template level (CSS
+   bug, missing render branch), push the fix to
+   `nilpage/sanity-547`'s `main` — every active lead rebuilds on next
+   webhook, so make the fix general.
+7. **Done** when the live URL renders, the visual review is clean,
+   and the owner's Studio reads in their own world.
 
-3. **Layout-content contracts**, encoded in `scripts/validate-content.mjs`:
-   - `cafe.handwerke` count must be a multiple of 3 (desktop 3-column).
-   - Menu sections in cards mode (any highlight has `featured: true`):
-     non-featured highlight count must be a multiple of 3.
-   - Menu sections in grid mode (highlights have categories): distinct
-     category count must be a multiple of 4.
-   These are not preferences. They are why the design works at desktop
-   width. Adding a 3rd category to a 4-column grid leaves an empty
-   column, which the user noticed immediately on Speisekarte.
+## Batch loop
 
-4. **No em or en dashes in rendered demo content.** Identical rule to
-   `../generator/`. Use commas, periods, semicolons, parens, or "bis"
-   for ranges. Applies to schema labels, helper text, and any prose in
-   `app/`. Does NOT apply to this file or the agent docs.
-
-5. **No real PII in artifacts.** Contact placeholder is
-   `deine-app@proton.me`, never the operator's real email. The operator's
-   real email is the lead's published address (`cafe.ryser@bluewin.ch`),
-   shown as a contact link, never as a form target.
-
-6. **Schema labels and helper text in the lead's primary language.**
-   Currently DE only; add bilingual support per lead when needed via
-   `@sanity/document-internationalization`. Never ship Sanity Studio
-   chrome in English to a German baker.
-
-7. **Pre-populate via `scripts/seed-assets.mjs`, never via Studio
-   clicks.** The whole point of the autonomous track is no manual UI
-   steps. If a lead needs to be designed, the seed script reads scan
-   data, uploads assets, patches docs, validates. The user runs one
-   command.
-
-8. **Sanity asset uploads use the @sanity/client write API, not the
-   MCP.** The MCP `create_documents_from_json` tool ignores explicit
-   `_id` and cannot upload binary assets. The seed script reads the auth
-   token from `~/.config/sanity/config.json` (set by `pnpm sanity login`)
-   and uploads via `client.assets.upload(kind, buffer, { filename,
-   contentType })`.
-
-9. **Per-lead Sanity project, EU data residency.** Swiss DSG / GDPR
-   compliance. Set at `sanity init` time (`--data-residency eu`); cannot
-   be changed without re-create. CORS for `localhost:3000` is
-   automatically registered by `sanity init`.
-
-10. **Type pairing and palette per lead, not project-wide.** Default
-    pairing is Newsreader + Manrope (Ryser-tuned). For a hobby shop or
-    an Italian deli, pick a different pair from the
-    `../generator/docs/agent/design.md` canonical pool (Cormorant,
-    Playfair, Italiana, GT Sectra, Recoleta, Fraunces, DM Serif Display,
-    Migra, Söhne, Manrope, Public Sans, Space Grotesk, etc.). Never two
-    leads with the same pairing.
-
-## Pre-completion checklist
-
-Before saying a piece of work is done, walk this checklist explicitly.
-This is not optional.
-
-- [ ] TypeScript compiles (`pnpm exec tsc --noEmit`).
-- [ ] Dev server returns 200 on `/` and `/studio` (curl is fine for this).
-- [ ] User has loaded the page in a real browser and confirmed, OR
-      visual validator passed. Math + curl is not enough.
-- [ ] `node scripts/validate-content.mjs` exits 0.
-- [ ] No em / en dashes anywhere under `app/`, `sanity/`,
-      `scripts/seed-*.mjs`. Check with `grep -rnE "—|–"`.
-- [ ] Footer disclaimer + source attribution + `deine-app@proton.me`
-      present in rendered HTML.
-
-## Trigger phrases
-
-| User says | You do |
-|-----------|--------|
-| "design lead 547 via sanity" / "sanity design 547" | per-lead procedure (below) on id 547 |
-| "design the next N via sanity" | run the bash loop (below) over N candidates from `demo_candidates`, one fresh `claude -p` spawn per lead |
-| "iterate sanity 547" | reload the lead's live URL, eyeball + run validators, fix what's off, push (auto-rebuild fires) |
-| "validate sanity 547" | set the lead's project ID env var, run `node scripts/validate-content.mjs` and `node scripts/validate-visual.mjs` |
-| "redeploy sanity 547" | re-run `node scripts/deploy.mjs --lead=547 --force` (idempotent steps skip; --force re-imports content) |
-
-## Per-lead procedure (sanity track)
-
-Triggered by "design lead `<id>` via sanity". Walk this in a fresh
-session, one lead at a time, deeply (matching `/generator`'s rule).
-
-### 1. Read what `/generator` already produced for this lead
-
-The audit work is already done by `/generator`. Don't repeat it.
-
-- `../generator/data/copy/<id>.facts.json` — business name, category,
-  email, snapshot, image URLs.
-- `../generator/web/leads/<id>/App.tsx` — the validated content arrays
-  (HANDWERKE, FRUEHSTUECK, COUPES, etc.) and prose (intro, team body,
-  feature blurbs, hours, holidays). This is the SOURCE OF TRUTH for
-  what content goes on the demo. Don't reinvent.
-- `../generator/data/repo/d/<hash>/` — harvested assets: hero.jpg,
-  team.jpg, logo.png, PDFs. Look up the hash via:
-  `select url_hash from demos where business_id = <id>` against
-  `../scan/data/registry.db`.
-
-### 2. Hand-author the content brief at `data/leads/<id>.json`
-
-Mirror `data/leads/547.json` (Ryser) as the canonical example. Keys:
-
-- Top-level: `businessId`, `name`, `tagline`, `intro`, `address`,
-  `phone`, `email`, `owners`, `locationHint`, `hoursNote`.
-- `handwerke`, `team`, `features` from the App.tsx HANDWERKE / TEAM /
-  Felchlin/Schwyzer-Örgeli/Terrasse blocks.
-- `hours`, `specialHours` from HOURS / HOLIDAYS arrays.
-- `menuSections[]`: one per FRUEHSTUECK / SPEISEKARTE / COUPES section,
-  with `key`, `title`, `headline`, `pdfFile`, `pdfLabel`, optional
-  `subtitle` and `intro`, optional `extras[]`, and `highlights[]` (4
-  for list mode, 4 categories for grid mode, featured + 3 cards for
-  cards mode — the validator enforces these counts).
-- `assets`: hero + logo file names (referring to files in
-  `../generator/data/repo/d/<hash>/`).
-
-Rules while authoring:
-- No em / en dashes anywhere (replace with commas, periods, "bis"
-  for ranges).
-- Match the lead's primary language exactly.
-- Voice fidelity: keep dialect, exclamation marks, regional words
-  ("z'mörgele", "Kaffeklatsch", "Gluscht") verbatim.
-- Faithful to facts: never invent prices, services, awards, hours.
-
-### 3. Deploy
-
-```bash
-CF_API_TOKEN=...  CF_ACCOUNT_ID=9af9dd6feb9e75d20059b1b815178adb \
-  node scripts/deploy.mjs --lead=<id>
-```
-
-The script chains: Sanity project (EU) + dataset + CORS + content
-import + validators + CF Pages project (named `<hash>`) + deploy hook
-+ Sanity webhook + first build. About 3-5 minutes per lead. Idempotent
-on re-run (reads `data/sanity-state.json` to skip already-done steps).
-
-### 4. Visual review
-
-```bash
-node scripts/validate-visual.mjs --url=https://<hash>.pages.dev/
-```
-
-Mandatory before declaring done. The Playwright + claude -p reviewer
-flags baseline misalignment, grid orphans, overflow, contrast issues,
-mobile breakage. Fix anything it surfaces; push fixes to the shared
-template repo (one commit triggers a rebuild for ALL active leads, but
-that's fine — the template fix benefits everyone).
-
-### 5. Record state
-
-The deploy script writes to `data/sanity-state.json`. No external
-registry update needed unless you want to mirror into
-`../scan/data/registry.db`'s `demos` table — that table is `/generator`-
-specific; sanity-track demos can live in their own state file or a
-parallel `sanity_demos` table. Defer until needed.
-
-## Batch procedure (loop)
-
-For N leads at once, run `scripts/design_loop.py`. It mirrors
-`/generator/scripts/design_loop.py`: one fresh `claude -p` spawn per
-lead, no shared context across leads, idempotent on resume.
+`scripts/design_loop.py` runs the procedure across multiple leads,
+one fresh `claude -p` per lead so context never carries.
 
 ```bash
 export CF_API_TOKEN=...
 export CF_ACCOUNT_ID=9af9dd6feb9e75d20059b1b815178adb
 
-python3 scripts/design_loop.py --max-leads 5      # next 5 candidates
-python3 scripts/design_loop.py --leads 547,568    # explicit list
-python3 scripts/design_loop.py --resume           # continue in_flight first
-python3 scripts/design_loop.py --dry-run          # print candidate list, exit
+python3 scripts/design_loop.py --max-leads 5
+python3 scripts/design_loop.py --leads 547,568
+python3 scripts/design_loop.py --resume
+python3 scripts/design_loop.py --dry-run
 ```
 
-What it does:
-
-- Picks `business_id`s from `../scan/data/registry.db` `demos` table
-  with `status='built'` (i.e., `/generator` has already produced an
-  audit + harvested assets + App.tsx for the lead, so step 1 of the
-  per-lead procedure has work to reuse).
-- Skips leads already in `data/sanity-state.json` (deployed) and any
-  in the loop's `completed` / `failed` set.
-- Spawns `claude -p` per lead with a self-contained prompt that points
-  at this CLAUDE.md and the per-lead procedure.
-- Watches stdout for rate-limit signals; stops the loop and leaves
-  `in_flight` set so `--resume` continues.
-- Writes a per-lead log to `data/design_loop.log` and loop state to
-  `data/design_loop.state.json`. PID lockfile at
-  `data/design_loop.lock` prevents concurrent runs.
-
-Failures don't cascade between leads. Re-running on already-deployed
-leads is a fast no-op (idempotency guard in `deploy.mjs` hits early).
+State at `data/design_loop.state.json`, log at `data/design_loop.log`,
+PID lockfile at `data/design_loop.lock`. Failures don't cascade.
+Re-running on already-deployed leads is a fast no-op.
 
 ## What lives where
 
-- `sanity/schemaTypes/` — TypeScript schemas for cafe, menuSection,
-  menuHighlight, aktuell. German labels and helper text. Lead-agnostic.
-- `sanity/structure.ts` — Studio nav. Café-Informationen as a
-  filtered-list singleton, Menü grouped (Abschnitte + Hervorhebungen),
-  Aktuelles flat.
-- `sanity/lib/{client,image,queries}.ts` — read-only client and GROQ
+- `sanity/schemaTypes/` — TypeScript schemas. Starting point only;
+  reshape per-lead.
+- `sanity/structure.ts` — Studio nav.
+- `sanity/lib/{client,image,queries}.ts` — read-only client + GROQ
   queries used by the front-end.
 - `sanity.config.ts` — Studio config, basePath `/studio`, singleton
-  templates filter, dev-action filter (no delete / unpublish /
-  duplicate on cafe).
-- `sanity.cli.ts` — CLI config for `sanity init`.
-- `app/` — Next.js app. `app/page.tsx` renders the homepage from Sanity
-  data; `app/studio/[[...tool]]/page.tsx` mounts the Studio with
-  `next/dynamic` ssr-false (avoids `window is not defined` SSR error).
-- `scripts/seed-assets.mjs` — uploads assets, patches docs, runs
-  validators. The autonomous-track entry point.
-- `scripts/validate-content.mjs` — data-shape contracts. Fast (~1s).
-- `scripts/validate-visual.mjs` — Playwright + claude -p review. Slow
-  (~30s). When implemented.
+  templates filter.
+- `app/page.tsx` — homepage renderer. Reshape per-lead when needed.
+- `app/studio/[[...tool]]/{page,StudioClient}.tsx` — Studio mount
+  with `next/dynamic` ssr-false.
+- `scripts/deploy.mjs` — per-lead deploy chain (Sanity project + CF
+  Pages + webhook wiring).
+- `scripts/validate-visual.mjs` — Playwright + claude -p visual review.
+- `scripts/design_loop.py` — batch orchestrator.
+- `scripts/import-from-generator.mjs` — content import from the brief.
+- `data/leads/<id>.json` — per-lead brief.
+- `data/sanity-state.json` — per-lead deployment artefacts (project
+  IDs, hook IDs, live URLs).
 
-## Known shapes from the Ryser PoC
+## Sanity asset handling
 
-- Project ID: `p16k3ee6`, dataset `production`, EU residency.
-- Cafe singleton ID: `c61d4798-d86d-40f8-8907-3685049e7b23` (auto, MCP
-  ignores explicit `_id`; structure.ts uses a filtered list to find it).
-- Menu sections:
-  - Frühstückskarte `6c93eaa8-c4e3-4b29-b4c3-06b22653203d`
-  - Speisekarte    `5ef2df35-f98c-490f-984a-25c98b8c9d62`
-  - Coupes         `7009ea48-3f17-4249-85a4-f0e7ac0a70e6`
-- Highlights: 12 docs (4 Frühstück list + 4 Speisekarte grid + 1 featured
-  Coupe + 3 Coupes cards) plus 1 Suppen & Salate item to fill the grid.
+Assets upload via `@sanity/client`'s write API
+(`client.assets.upload(kind, buffer, { filename, contentType })`).
+Auth token from `~/.config/sanity/config.json` (set by `pnpm sanity
+login`). The MCP `create_documents_from_json` tool can't upload
+binaries and ignores explicit `_id` on document creation; don't rely
+on it for asset paths or deterministic IDs.
 
 ## Production wiring
 
-### URL naming convention
+### URL naming
 
-Cloudflare Pages project names become the `<name>.pages.dev` subdomain.
-**The CF project name MUST be the lead's `url_hash`** from
-`../scan/data/registry.db` (8 hex chars, derived via
-`HMAC-SHA256(NOPAGE_DEMO_SECRET, str(business_id))[:8]`).
+Cloudflare Pages project name = the lead's `url_hash` from
+`scan/data/registry.db` (`HMAC-SHA256(NOPAGE_DEMO_SECRET,
+str(business_id))[:8]`). For Ryser (547): hash `a1d44df0` →
+`https://a1d44df0.pages.dev/`.
 
-Rationale: leads who saw a `/generator` demo at
-`nilpage.github.io/nopage/d/<hash>/` see the same hash at
-`<hash>.pages.dev` for the Sanity track. The hash carries the brand
-trust we already built. **Never use the lead id (e.g., `sanity-547`),
-the framework name (`sanity-`), or any prefix in the CF project name.**
-For Ryser (lead 547): hash `a1d44df0` → `a1d44df0.pages.dev`.
-
-GitHub repo names are internal and don't appear in the URL; current
-convention is `nilpage/sanity-<lead_id>` (the lead id is fine here for
-operator orientation), but the future orchestrator may switch to
-`nilpage/<hash>` for full consistency.
+Rationale: the hash matches /generator's `nilpage.github.io/nopage/d/<hash>/`
+URL, so leads who saw the /generator demo recognise the trust
+already built. Never use `sanity-<id>`, `<framework>-<id>`, or any
+prefix.
 
 ### Ryser (lead 547) artifacts
 
-- GitHub repo: `nilpage/sanity-547` (public). Push to `main` triggers
-  Cloudflare Pages build. Build command: `pnpm install --frozen-lockfile
-  && pnpm build`. Output: `out/`. Node 22.
-- Cloudflare Pages project: `a1d44df0`, account
-  `9af9dd6feb9e75d20059b1b815178adb`. Live at `https://a1d44df0.pages.dev/`.
-  Production env vars set on the CF project:
+- GitHub repo: `nilpage/sanity-547` (public, shared template). Push
+  to `main` rebuilds every active lead.
+- CF Pages project: `a1d44df0`, account
+  `9af9dd6feb9e75d20059b1b815178adb`. Live at
+  `https://a1d44df0.pages.dev/`. Production env vars:
   `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`,
   `NEXT_PUBLIC_SANITY_API_VERSION`.
-- CF Pages deploy hook: id `1b76eae3-aff8-477f-ac4f-9bb709063ab1`.
-  POST to `https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/<id>`
-  triggers a build on `main`. Unauthenticated.
-- Sanity webhook: id `tyFQ1spsE6yYtpbn`, fires on create/update/delete of
-  `cafe`, `menuSection`, `menuHighlight`, `aktuell`, only on published
-  documents (`includeDrafts: false`). Targets the CF deploy hook URL.
-  Round-trip from publish to live: roughly 60–120 s (Sanity webhook
-  delivery + CF Pages build).
-- Sanity CORS origins for the live Studio: `http://localhost:3000`,
-  `https://a1d44df0.pages.dev`, `https://*.a1d44df0.pages.dev`.
-  (Stale `sanity-547.pages.dev` entries from the original deploy are
-  harmless and can be removed later via the Manage API.)
+- CF deploy hook id: `1b76eae3-aff8-477f-ac4f-9bb709063ab1`.
+- Sanity project: `p16k3ee6`, dataset `production`, EU residency.
+- Sanity webhook id: `tyFQ1spsE6yYtpbn` (fires on create/update/delete
+  of `cafe`, `menuSection`, `menuHighlight`, `aktuell`).
+- Sanity CORS: `http://localhost:3000`, `https://a1d44df0.pages.dev`,
+  `https://*.a1d44df0.pages.dev`.
+
+Publish-to-live round-trip: ~60–120s (Sanity webhook + CF Pages
+build).
 
 ## Multi-tenant architecture
 
-One shared template repo (`nilpage/sanity-547`, kept name for now)
-serves as the source for ALL leads' CF Pages projects. The repo is
-generic: it reads `NEXT_PUBLIC_SANITY_PROJECT_ID` etc. at build time
-and renders that project's content.
+One shared template repo (`nilpage/sanity-547`) serves N CF Pages
+projects, one per lead. Per lead:
 
-Per lead:
-- One Sanity project (EU residency, free tier).
+- One Sanity project (EU, free tier).
 - One CF Pages project named `<hash>`, sourcing the shared repo, env
-  vars pointing at the lead's Sanity project ID.
-- One CF deploy hook, one Sanity webhook tying them together.
-- One row in `data/sanity-state.json` recording all the IDs.
+  vars pointing at the lead's Sanity project.
+- One CF deploy hook + one Sanity webhook tying them together.
+- One row in `data/sanity-state.json`.
 
-A code-level template fix pushed to `nilpage/sanity-547`'s `main`
-auto-rebuilds every active lead's CF Pages project. That's a feature:
-one commit fixes everyone. Be careful with breaking changes — visual
-regression should run on at least one lead before pushing template
-changes. Check `data/sanity-state.json` for live URLs.
+A template fix pushed to `main` rebuilds every active lead. Visual-
+review at least one lead before pushing breaking changes — the live
+URLs are in `data/sanity-state.json`.
 
-## One-time setup (already done for the current account)
+## One-time setup (done for the current account)
 
-- Cloudflare Pages GitHub App installed on `nilpage` org with all-
-  repos access. (`https://github.com/apps/cloudflare-pages` → Configure)
-- `pnpm sanity login` ran once; auth token cached at
-  `~/.config/sanity/config.json`.
-- `CF_API_TOKEN` + `CF_ACCOUNT_ID` env vars set in your shell.
+- Cloudflare Pages GitHub App installed on `nilpage` org, all-repos
+  access.
+- `pnpm sanity login` once; auth token cached.
+- `CF_API_TOKEN` + `CF_ACCOUNT_ID` env vars set in your shell when
+  running `deploy.mjs` or `design_loop.py`.
 
-`scripts/deploy.mjs` reads the Sanity token from the config file and
-the CF credentials from env. No interactive steps.
+## Failure modes already seen
 
-## Failure modes already encountered
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Studio blank on `/studio` SSR | `NextStudio` touches `window` at module load | `next/dynamic` with `ssr: false` (already done) |
+| `_id` env duplicated / empty | `.env.local` declared `NEXT_PUBLIC_SANITY_PROJECT_ID=` twice | `deploy.mjs` writes the file fresh on each run |
+| Sanity Studio chrome in English | i18n locale plugin missing | Add `@sanity/locale-de-DE` (or fr-FR / it-IT) to the per-lead Studio |
+| MCP `create_documents_from_json` returns UUIDs even with explicit `_id` | MCP limitation | Use `@sanity/client` directly |
+| Visual misalignment (dotted leaders, baseline drift) | CSS math without a render check | Run `validate-visual.mjs` before declaring done |
 
-| Symptom | Root cause | Catch |
-|---------|-----------|-------|
-| Studio renders blank with errors | `_id` in `.env.local` declared twice (first empty), or empty | Validator with env shape check; for now, the seed script exits with a clear message |
-| `window is not defined` on `/studio` SSR | `NextStudio` accesses `window` at module load | Use `next/dynamic` with `ssr: false` |
-| Coupes grid shows 2 cards in a 3-column row | Non-featured count is 2, not a multiple of 3 | Content validator |
-| Speisekarte shows 3 categories in a 4-column row | Distinct categories not a multiple of 4 | Content validator |
-| Toast Hawaii dotted leader sits below the price baseline | `align-self: end` + `margin-bottom` math vs italic-serif baseline | Visual validator (TODO); for now, flex baseline + em-based dots height |
-| Sanity Studio chrome in English | i18n locale not configured | Add `@sanity/locale-de-DE` plugin (TODO) |
-
-When a new failure mode is found, add it here with the symptom, root
-cause, and where it should be caught. The table is the project's
-collective memory; if it grows, the validators grow with it.
+Add to the table when you find something new. The point of the table
+is to short-circuit the second occurrence.

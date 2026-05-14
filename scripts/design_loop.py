@@ -49,14 +49,11 @@ LOOP_LOG_FILE = REPO_ROOT / "data" / "design_loop.log"
 LOCKFILE = REPO_ROOT / "data" / "design_loop.lock"
 
 PROMPT_TEMPLATE = (
-    "Design lead {lead_id} via the sanity track. Read "
-    "/home/pi/projects/nopage/sanity-generator/CLAUDE.md and follow the "
-    "per-lead procedure end to end. Author the content brief at "
-    "data/leads/{lead_id}.json from /generator's facts.json + App.tsx, "
-    "then run scripts/deploy.mjs --lead={lead_id}, then "
-    "scripts/validate-visual.mjs against the live URL. Exit when the "
-    "live URL is reachable and the visual validator is clean. Do NOT "
-    "ask for confirmation; the loop runs autonomously."
+    "Design lead {lead_id} for the sanity track. Read "
+    "/home/pi/projects/nopage/sanity-generator/CLAUDE.md once at the "
+    "start; the per-lead procedure is in there. Walk it end to end "
+    "and exit when the live URL renders cleanly. Do not ask for "
+    "confirmation; the loop runs autonomously."
 )
 
 # Substring matches that signal the loop should stop and resume later.
