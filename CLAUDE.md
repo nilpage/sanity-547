@@ -36,14 +36,64 @@ running a hair salon.
 - `../generator/docs/agent/design.md` — design quality bar, soul-read,
   customer-target audience, anti-patterns, type pairings. Same rules
   as /generator. Read it once.
-- `../generator/docs/agent/audit.md` — site-audit protocol. The audit
-  output `../generator/data/copy/<id>.audit.md` is the source of truth
-  for content. If it exists, read it. If it doesn't, you walk audit.md
-  and write it yourself; the protocol is the same as /generator's,
-  because the underlying lead is the same.
+- `../generator/docs/agent/audit.md` — site-audit protocol. Walk it
+  against the lead's live site and write your own audit at
+  `data/copy/<id>.audit.md`. If a /generator audit already exists at
+  `../generator/data/copy/<id>.audit.md`, read that as a head-start
+  (same protocol, same lead) — it's optional reuse, not a requirement.
+  The sanity track does not depend on /generator having run first.
 
 This file deliberately doesn't repeat those. It only covers what's
 specific to the Sanity substrate.
+
+## Who this product is for, lead-fit filter
+
+The Sanity demo is an **editable informative page**. It is the wrong
+product for a business whose primary online presence is a running
+webshop: their stack is already a commerce engine (Shopify, WooCommerce,
+Magento, Wix Stores, Shopware, JTL, PrestaShop, Squarespace Commerce, …),
+their owner is invested in product/order/checkout flows the Sanity demo
+does not replace, and the pitch wastes a session.
+
+**Skip rule.** If the lead's live site shows active commerce-platform
+markers AND the scan's latest score is below 15 (= "looks roughly
+maintained"), decline the lead. Do not run the audit, do not build a
+brief, do not deploy. Write a one-line decline marker and exit:
+
+```bash
+python3 -c "import json, pathlib; \
+  pathlib.Path('data/leads/<id>.declined.json').write_text(\
+    json.dumps({'business_id': <id>, 'reason': 'active webshop'}) + '\n')"
+```
+
+What counts as "active commerce markers" in the live HTML:
+
+- `woocommerce` / `wc-blocks` / `wp-content/plugins/woocommerce`
+- `cdn.shopify.com` / `myshopify.com` / `Shopify.theme`
+- `prestashop` / `var prestashop`
+- `Magento_` / `Mage.Cookies`
+- `shopware` / `Shopware.Module`
+- `jtl-shop` / `jtl_token`
+- `wix-stores` / `wixStoresFrontend`
+- `squarespace-commerce`
+- a visible `/checkout`, `/warenkorb`, `/cart`, `/kasse` link/form
+
+One-line check during the per-lead procedure (step 0a, before the audit):
+
+```bash
+curl -sL --max-time 20 -A 'Mozilla/5.0' "$URL" \
+  | grep -iE 'woocommerce|cdn\.shopify|myshopify|prestashop|magento_|mage\.cookies|shopware|jtl-shop|wix-stores|squarespace-commerce' \
+  | head -3
+```
+
+A hit + score < 15 → decline, exit. The batch loop's
+`candidates_from_registry()` already filters most of these out at
+candidate-pick time; this in-agent check catches the few that slipped
+through (e.g. shop pages added between scan and run).
+
+Visibly outdated webshops (score ≥ 15) are kept. The underlying HTML is
+broken enough that the owner may want a refactor regardless, and at that
+score the pitch is worth a session.
 
 ## How to think about a lead
 
@@ -100,9 +150,23 @@ The few rules that exist because breaking them ends the sale:
 
 ## Per-lead procedure
 
-1. **Audit.** Read `../generator/data/copy/<id>.audit.md` if it
-   exists. If not, walk `../generator/docs/agent/audit.md`. The pre-
-   design checklist in audit.md is the same here.
+0. **Look up the lead** in `../scan/data/registry.db`. Use `python3 -c
+   "import sqlite3; ..."` (no `sqlite3` CLI on the box). Pull
+   `businesses.{name, addr_*, phone, email_osm, opening_hours,
+   operator}`, `urls.url WHERE is_primary=1`, and the most-recent
+   `snapshots.id` for the lead's url_id. The url_hash you'll need for
+   the CF Pages project name is `HMAC-SHA256(NOPAGE_DEMO_SECRET,
+   str(business_id))[:8]` — `deploy.mjs` computes it; you only need
+   it for sanity-checking the live URL at the end.
+0a. **Fit check.** Run the active-webshop probe from the Lead-fit
+   filter section above. On a hit AND score < 15, write the decline
+   marker and exit. The batch loop will not re-pick the lead.
+1. **Audit.** Walk `../generator/docs/agent/audit.md` against the
+   live site. Write the result to `data/copy/<id>.audit.md`. If
+   `../generator/data/copy/<id>.audit.md` already exists, read it as
+   a head-start and extend rather than redo — it's the same protocol
+   on the same lead, so reuse is fine, but the sanity track does not
+   require /generator to have run first.
 2. **Shape the schema** to fit this lead. Rename labels and helper
    text so the owner's Studio reads naturally. Drop fields that don't
    apply; add fields the lead clearly needs (e.g. a `gallery` for a

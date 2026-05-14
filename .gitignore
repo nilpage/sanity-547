@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# per-lead runtime artifacts (briefs, audits, assets) and loop state
+/data/copy/
+/data/leads/
+/data/assets/
+/data/design_loop.log
+/data/design_loop.state.json
+/data/design_loop.lock
+
+# python bytecode + claude memory cache
+__pycache__/
+/memory/

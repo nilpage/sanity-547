@@ -16,7 +16,9 @@ export const cafeQuery = groq`*[_type == "cafe"][0]{
   locationHint,
   hours,
   specialHours,
-  hoursNote
+  hoursNote,
+  sourceUrl,
+  sourceLabel
 }`;
 
 export const menuSectionsQuery = groq`*[_type == "menuSection"] | order(order asc, title asc){

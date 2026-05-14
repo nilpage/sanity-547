@@ -3,22 +3,22 @@ import { defineField, defineType } from "sanity";
 export const menuHighlight = defineType({
   name: "menuHighlight",
   type: "document",
-  title: "Menü-Hervorhebung",
+  title: "Produkt",
   description:
-    "Ein einzelner Eintrag, der auf der Webseite als Karte gezeigt wird. Nicht jede Position aus dem PDF muss hier erfasst sein. Hier kommen nur die Aushängeschilder.",
+    "Ein einzelnes Produkt oder Angebot, das auf der Website hervorgehoben wird. Nicht jeder Artikel muss erfasst sein, nur die Aushängeschilder.",
   fields: [
     defineField({
       name: "name",
       type: "string",
       title: "Name",
-      description: "Z.B. Coupe Ryser, oder Sonntags-Frühstück.",
+      description: "Z.B. Bergbauernbrot oder Grosses Bäckerzmorgen.",
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: "section",
       type: "reference",
-      title: "Abschnitt",
-      description: "Zu welchem Menü-Abschnitt gehört dieser Eintrag?",
+      title: "Sortiments-Bereich",
+      description: "Zu welchem Bereich gehört dieses Produkt?",
       to: [{ type: "menuSection" }],
       validation: (Rule) => Rule.required(),
     }),
@@ -27,7 +27,7 @@ export const menuHighlight = defineType({
       type: "string",
       title: "Unter-Kategorie",
       description:
-        "Optional. Innerhalb des Abschnitts gruppiert. Z.B. Mittagsmenü, Suppen, Toasts.",
+        "Optional. Innerhalb des Bereichs gruppiert. Z.B. Torten, Patisserie, Teestückli.",
     }),
     defineField({
       name: "description",
@@ -40,19 +40,19 @@ export const menuHighlight = defineType({
       name: "price",
       type: "string",
       title: "Preis",
-      description: "Z.B. 9.80, oder ab 18.00.",
+      description: "Z.B. Fr. 5.00, oder ab Fr. 18.00.",
     }),
     defineField({
       name: "note",
       type: "string",
       title: "Hinweis",
-      description: "Optional. Z.B. auch werktags.",
+      description: "Optional. Z.B. saisonal oder auf Vorbestellung.",
     }),
     defineField({
       name: "featured",
       type: "boolean",
-      title: "Hausspezialität",
-      description: "Wenn aktiviert, wird dieser Eintrag besonders hervorgehoben.",
+      title: "Empfehlung des Hauses",
+      description: "Wenn aktiviert, wird dieses Produkt besonders hervorgehoben.",
       initialValue: false,
     }),
     defineField({
@@ -66,8 +66,7 @@ export const menuHighlight = defineType({
       name: "order",
       type: "number",
       title: "Sortierung",
-      description:
-        "Niedrigere Zahlen erscheinen zuerst, innerhalb des Abschnitts.",
+      description: "Niedrigere Zahlen erscheinen zuerst, innerhalb des Bereichs.",
       initialValue: 100,
     }),
   ],
@@ -80,7 +79,7 @@ export const menuHighlight = defineType({
       media: "photo",
     },
     prepare({ title, section, price, featured, media }) {
-      const subtitle = [section, price, featured ? "Hausspezialität" : null]
+      const subtitle = [section, price, featured ? "Empfehlung" : null]
         .filter(Boolean)
         .join(" · ");
       return { title, subtitle, media };
@@ -88,7 +87,7 @@ export const menuHighlight = defineType({
   },
   orderings: [
     {
-      title: "Abschnitt und Sortierung",
+      title: "Bereich und Sortierung",
       name: "sectionOrder",
       by: [
         { field: "section.title", direction: "asc" },

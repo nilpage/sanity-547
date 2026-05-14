@@ -3,7 +3,7 @@ import { defineField, defineType } from "sanity";
 export const cafe = defineType({
   name: "cafe",
   type: "document",
-  title: "Café-Informationen",
+  title: "Informationen",
   groups: [
     { name: "general", title: "Allgemein", default: true },
     { name: "content", title: "Inhalte" },
@@ -50,6 +50,20 @@ export const cafe = defineType({
       description: "Optionales Logo, erscheint in Header und Footer.",
       group: "general",
     }),
+    defineField({
+      name: "sourceUrl",
+      type: "url",
+      title: "Bestehende Website (URL)",
+      description: "Link zur aktuellen Website des Betriebs. Erscheint im Impressum-Hinweis.",
+      group: "general",
+    }),
+    defineField({
+      name: "sourceLabel",
+      type: "string",
+      title: "Bestehende Website (Anzeigename)",
+      description: "Kurze Adresse ohne https://, z.B. baeckerei-meyer.ch.",
+      group: "general",
+    }),
 
     // -- Inhalte --
     defineField({
@@ -77,15 +91,15 @@ export const cafe = defineType({
     defineField({
       name: "handwerke",
       type: "array",
-      title: "Handwerke",
+      title: "Bereiche",
       description:
-        "Die Bereiche, in denen Sie tätig sind. Erscheinen als nummerierte Karten. Empfohlen: 2 bis 4 Einträge.",
+        "Die Geschäftsbereiche, z.B. Bäckerei, Konditorei, Café. Erscheinen als nummerierte Karten. Empfohlen: 3 oder 6 Einträge.",
       group: "content",
       of: [
         {
           type: "object",
           name: "handwerk",
-          title: "Handwerk",
+          title: "Bereich",
           fields: [
             defineField({
               name: "name",
@@ -110,14 +124,14 @@ export const cafe = defineType({
     defineField({
       name: "team",
       type: "object",
-      title: "Familie / Team",
+      title: "Familie / Inhaber",
       description: "Foto und Beschreibung der Inhaber. Optional.",
       group: "content",
       fields: [
         defineField({
           name: "photo",
           type: "image",
-          title: "Team-Foto",
+          title: "Foto",
           options: { hotspot: true },
           fields: [
             defineField({
@@ -129,7 +143,7 @@ export const cafe = defineType({
               name: "caption",
               type: "string",
               title: "Bildunterschrift",
-              description: "Erscheint unter dem Foto. Z.B. Paul und Heidi in der Backstube.",
+              description: "Erscheint unter dem Foto.",
             }),
           ],
         }),
@@ -137,7 +151,7 @@ export const cafe = defineType({
           name: "title",
           type: "string",
           title: "Überschrift",
-          description: "Z.B. Paul und Heidi Ryser-Danioth.",
+          description: "Z.B. Urban und Sandra Meyer.",
         }),
         defineField({
           name: "body",
@@ -150,15 +164,15 @@ export const cafe = defineType({
     defineField({
       name: "features",
       type: "array",
-      title: "Spezialitäten / Geschichten",
+      title: "Highlights / Geschichte",
       description:
-        "Kurze Prosa-Abschnitte für besondere Themen wie Lieferanten, Hausspezialität, Terrasse. Optional.",
+        "Kurze Prosa-Abschnitte für besondere Themen wie Holzofen, Hausspezialitäten, Geschichte. Optional.",
       group: "content",
       of: [
         {
           type: "object",
           name: "feature",
-          title: "Feature",
+          title: "Highlight",
           fields: [
             defineField({
               name: "title",
@@ -170,7 +184,7 @@ export const cafe = defineType({
               name: "eyebrow",
               type: "string",
               title: "Über-Titel",
-              description: "Optional. Z.B. Couverture oder Hausspezialität.",
+              description: "Optional. Z.B. Holzofen oder Seit 1874.",
             }),
             defineField({
               name: "body",
@@ -183,8 +197,7 @@ export const cafe = defineType({
               name: "attribution",
               type: "string",
               title: "Quellenangabe / Detail",
-              description:
-                "Optional. Z.B. Felchlin, Ibach SZ, Schweizer Couverture seit 1908.",
+              description: "Optional. Z.B. Martin Bucher, Bäcker-Konditor.",
             }),
           ],
           preview: {
@@ -201,7 +214,7 @@ export const cafe = defineType({
       title: "Adresse",
       group: "contact",
       fields: [
-        defineField({ name: "street", type: "string", title: "Strasse / Postfach" }),
+        defineField({ name: "street", type: "string", title: "Strasse" }),
         defineField({ name: "zip", type: "string", title: "PLZ" }),
         defineField({ name: "city", type: "string", title: "Ort" }),
       ],
@@ -211,15 +224,14 @@ export const cafe = defineType({
       name: "phone",
       type: "string",
       title: "Telefon",
-      description: "Mit Vorwahl, zum Beispiel: 041 811 31 20.",
+      description: "Mit Vorwahl, zum Beispiel: 041 917 10 74.",
       group: "contact",
     }),
     defineField({
       name: "email",
       type: "string",
       title: "E-Mail",
-      description:
-        "Kontakt-E-Mail. Erscheint im Footer und auf der Kontaktseite.",
+      description: "Kontakt-E-Mail. Erscheint im Footer und auf der Kontaktseite.",
       group: "contact",
       validation: (Rule) => Rule.email(),
     }),
@@ -227,15 +239,14 @@ export const cafe = defineType({
       name: "owners",
       type: "string",
       title: "Inhaber",
-      description: "Z.B. Paul und Heidi Ryser-Danioth. Erscheint im Kontaktblock.",
+      description: "Z.B. Urban und Sandra Meyer. Erscheint im Kontaktblock.",
       group: "contact",
     }),
     defineField({
       name: "locationHint",
       type: "text",
       title: "Standort-Beschreibung",
-      description:
-        "Kurzer Satz, wo man Sie findet. Z.B. zentral in Schwyz, unterhalb des Hauptplatzes.",
+      description: "Kurzer Satz, wo man Sie findet.",
       group: "contact",
       rows: 2,
     }),
@@ -258,14 +269,13 @@ export const cafe = defineType({
               name: "label",
               type: "string",
               title: "Tag oder Bereich",
-              description:
-                "Zum Beispiel: Montag bis Freitag, oder Sonntag und Feiertage.",
+              description: "Zum Beispiel: Montag bis Freitag, oder Sonntag.",
             }),
             defineField({
               name: "value",
               type: "string",
               title: "Zeit",
-              description: "Zum Beispiel: 7.00 bis 18.00, oder geschlossen.",
+              description: "Zum Beispiel: 06.00 bis 18.00, oder geschlossen.",
             }),
           ],
           preview: {
@@ -278,8 +288,7 @@ export const cafe = defineType({
       name: "specialHours",
       type: "array",
       title: "Feiertags-Öffnungszeiten",
-      description:
-        "Spezielle Tage wie Weihnachten, Silvester, Ostern. Optional.",
+      description: "Spezielle Tage wie Auffahrt, Weihnachten. Optional.",
       group: "hours",
       of: [
         {
@@ -291,13 +300,13 @@ export const cafe = defineType({
               name: "date",
               type: "string",
               title: "Datum oder Anlass",
-              description: "Zum Beispiel: 24.12., oder Ostermontag.",
+              description: "Zum Beispiel: Auffahrt 14. Mai.",
             }),
             defineField({
               name: "value",
               type: "string",
               title: "Zeit oder Status",
-              description: "Zum Beispiel: bis 16.00 offen, oder geschlossen.",
+              description: "Zum Beispiel: 08.00 bis 17.00 Uhr, oder geschlossen.",
             }),
           ],
           preview: {
@@ -310,8 +319,7 @@ export const cafe = defineType({
       name: "hoursNote",
       type: "text",
       title: "Hinweis zu den Öffnungszeiten",
-      description:
-        "Optionaler Zusatz unter der Tabelle. Z.B. Reservationen nur per Telefon.",
+      description: "Optionaler Zusatz unter der Tabelle.",
       group: "hours",
       rows: 2,
     }),
@@ -320,7 +328,7 @@ export const cafe = defineType({
     select: { title: "name", subtitle: "tagline" },
     prepare({ title, subtitle }) {
       return {
-        title: title || "Café-Informationen",
+        title: title || "Informationen",
         subtitle: subtitle || "Klicken zum Bearbeiten",
       };
     },

@@ -49,6 +49,8 @@ type Cafe = {
   hours?: { label?: string; value?: string }[];
   specialHours?: { date?: string; value?: string }[];
   hoursNote?: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
 };
 
 type Highlight = {
@@ -294,7 +296,7 @@ function HandwerkeBlock({
   return (
     <section className={styles.handwerke}>
       <div className={styles.handwerkeHead}>
-        <SectionEyebrow roman={roman} label="Drei Handwerke" />
+        <SectionEyebrow roman={roman} label="Unsere Bereiche" />
       </div>
       <ul className={styles.handwerkeList}>
         {items.map((h, i) => (
@@ -483,7 +485,7 @@ function MenuCardsView({ highlights }: { highlights: Highlight[] }) {
           }
         >
           {h.featured && (
-            <span className={styles.menuCardBadge}>Hausspezialität</span>
+            <span className={styles.menuCardBadge}>Empfehlung</span>
           )}
           <h3 className={styles.menuCardName}>{h.name}</h3>
           {h.description && (
@@ -683,7 +685,7 @@ function VisitBlock({
                 {cafe.phone}
               </a>
             </p>
-            <span className={styles.visitMeta}>Reservation, Bestellung</span>
+            <span className={styles.visitMeta}>Bestellungen, Auskunft</span>
           </div>
         )}
         {cafe.email && (
@@ -711,7 +713,7 @@ function VisitBlock({
           href={`tel:${cafe.phone.replace(/\s+/g, "")}`}
           className={styles.visitCta}
         >
-          <span>Reservation, {cafe.phone}</span>
+          <span>Bestellung, {cafe.phone}</span>
           <Diamond small />
         </a>
       )}
@@ -767,7 +769,8 @@ function Aktuelles({ items }: { items: AktuellPreview[] }) {
 }
 
 function Footer({ cafe }: { cafe: Cafe }) {
-  const sourceLabel = "cafe-ryser.ch";
+  const sourceUrl = cafe.sourceUrl ?? null;
+  const sourceLabel = cafe.sourceLabel ?? null;
   const logoUrl = cafe.logo?.asset
     ? urlFor(cafe.logo).width(400).quality(90).url()
     : null;
@@ -791,16 +794,21 @@ function Footer({ cafe }: { cafe: Cafe }) {
           </span>
         </div>
         <p className={styles.footerDisclaimer}>
-          Unverbindlicher Entwurf für {cafe.name}. Inhalte und Bilder basieren
-          auf der bestehenden Website{" "}
-          <a
-            href="http://www.cafe-ryser.ch/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {sourceLabel}
-          </a>
-          . Kontakt: <a href="mailto:deine-app@proton.me">deine-app@proton.me</a>.
+          Unverbindlicher Entwurf für {cafe.name}.
+          {sourceUrl && sourceLabel && (
+            <>
+              {" "}Inhalte und Bilder basieren auf der bestehenden Website{" "}
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {sourceLabel}
+              </a>
+              .
+            </>
+          )}
+          {" "}Kontakt: <a href="mailto:deine-app@proton.me">deine-app@proton.me</a>.
         </p>
         <p className={styles.footerAdmin}>
           <Link href="/studio">Verwaltung</Link>
@@ -845,7 +853,7 @@ function EmptyContentNotice() {
       <div className={styles.noticeInner}>
         <h1>Noch keine Inhalte</h1>
         <p>
-          Im <Link href="/studio">Studio</Link> die Café-Informationen
+          Im <Link href="/studio">Studio</Link> die Informationen
           ausfüllen, dann erscheint hier die Startseite.
         </p>
       </div>

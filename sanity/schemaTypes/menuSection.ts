@@ -3,15 +3,15 @@ import { defineField, defineType } from "sanity";
 export const menuSection = defineType({
   name: "menuSection",
   type: "document",
-  title: "Menü-Abschnitt",
+  title: "Sortiments-Bereich",
   description:
-    "Ein Abschnitt der Speisekarte mit eigenem PDF und optionalen Hervorhebungen. Z.B. Frühstückskarte, Speisekarte, Coupes.",
+    "Ein Abschnitt des Sortiments mit optionalen Hervorhebungen. Z.B. Brot & Backwaren, Konditorei & Patisserie, Café & Frühstück.",
   fields: [
     defineField({
       name: "title",
       type: "string",
       title: "Titel",
-      description: "Z.B. Frühstückskarte.",
+      description: "Z.B. Brot & Backwaren oder Konditorei & Patisserie.",
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -19,7 +19,7 @@ export const menuSection = defineType({
       type: "string",
       title: "Headline",
       description:
-        "Optional. Erscheint gross über der Liste. Z.B. Beginnen Sie den Tag im Hause Ryser.",
+        "Optional. Erscheint gross über der Liste. Z.B. Täglich frisch aus dem Holzofen.",
     }),
     defineField({
       name: "slug",
@@ -33,7 +33,7 @@ export const menuSection = defineType({
       type: "string",
       title: "Untertitel",
       description:
-        "Optional. Z.B. Mo bis Fr · 11:00 bis 14:30.",
+        "Optional. Z.B. Frühstück täglich ab 06.00 Uhr.",
     }),
     defineField({
       name: "intro",
@@ -45,24 +45,21 @@ export const menuSection = defineType({
     defineField({
       name: "pdf",
       type: "file",
-      title: "PDF der vollständigen Karte",
-      description:
-        "Lade hier die aktuelle Version des PDF hoch. Die Besucher sehen einen Download-Link.",
+      title: "PDF (vollständiges Sortiment)",
+      description: "Lade hier ein aktuelles PDF hoch. Die Besucher sehen einen Download-Link.",
       options: { accept: "application/pdf" },
     }),
     defineField({
       name: "pdfLabel",
       type: "string",
       title: "Beschriftung des PDF-Links",
-      description:
-        "Z.B. PDF · Frühstückskarte. Wird unter den Hervorhebungen angezeigt.",
+      description: "Z.B. PDF · vollständige Sortimentsliste herunterladen.",
     }),
     defineField({
       name: "extras",
       type: "array",
-      title: "Zusätze (Extra dazu)",
-      description:
-        "Optional. Kleine Zusatz-Liste am Ende des Abschnitts. Z.B. 3-Minuten-Ei für 2.50.",
+      title: "Zusätze",
+      description: "Optional. Kleine Zusatz-Liste am Ende des Abschnitts.",
       of: [
         {
           type: "object",

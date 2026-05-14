@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Per-lead orchestrator for the sanity-generator track.
 
-Mirrors `generator/scripts/design_loop.py`:
+Spawns one fresh `claude -p` per lead. Each spawn reads `CLAUDE.md`,
+walks the per-lead procedure (audit → schema shaping → brief →
+deploy.mjs), and exits when the lead's live URL is up.
 
-- Picks leads from `../scan/data/registry.db`'s `demos` table that have a
-  `/generator` demo built (so the App.tsx + audit + harvested assets
-  exist) and don't yet have a sanity deployment recorded in
-  `data/sanity-state.json`.
-- Spawns one fresh `claude -p "design lead <id> via sanity"` per lead.
-  Each spawn reads `CLAUDE.md`, walks the per-lead procedure, and exits
-  when the lead's live URL is up.
-- Watches stdout for rate-limit signals; exits the loop gracefully if
-  hit, leaving `in_flight` in the state file so a `--resume` run picks
-  up where it left off.
-- Per-lead log appended to `data/design_loop.log`. Loop state at
-  `data/design_loop.state.json`.
+Default candidate pool is `demos WHERE status='built'` (leads the
+sister `/generator` track already produced an audit + assets for —
+cheapest to design, since the audit can be reused). Pass `--leads`
+explicitly to force any lead id; the per-lead procedure works from
+scratch off the live site + scan snapshot when no /generator audit
+exists.
 
-Stdlib only, no `uv` or `pyproject.toml` needed.
+Watches stdout for rate-limit signals; exits the loop gracefully if
+hit, leaving `in_flight` in the state file so `--resume` picks up.
+Per-lead log appended to `data/design_loop.log`. Loop state at
+`data/design_loop.state.json`.
+
+Stdlib only.
 
 Usage:
   python3 scripts/design_loop.py --max-leads 5
@@ -33,8 +34,10 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import gzip
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -43,10 +46,25 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGISTRY_DB = REPO_ROOT.parent / "scan" / "data" / "registry.db"
+SNAPSHOTS_DIR = REPO_ROOT.parent / "scan" / "data" / "snapshots"
+LEADS_DIR = REPO_ROOT / "data" / "leads"
 SANITY_STATE_FILE = REPO_ROOT / "data" / "sanity-state.json"
 LOOP_STATE_FILE = REPO_ROOT / "data" / "design_loop.state.json"
 LOOP_LOG_FILE = REPO_ROOT / "data" / "design_loop.log"
 LOCKFILE = REPO_ROOT / "data" / "design_loop.lock"
+
+# Active-commerce-platform markers we want to skip. The Sanity demo is
+# an editable informative page; it's the wrong product for an owner
+# running one of these. See "Lead-fit filter" in CLAUDE.md.
+WEBSHOP_MARKERS = re.compile(
+    rb"woocommerce|wc-blocks|cdn\.shopify|myshopify|prestashop|"
+    rb"magento_|mage\.cookies|shopware|jtl-shop|wix-stores|"
+    rb"squarespace-commerce|/checkout|/warenkorb|/kasse",
+    re.IGNORECASE,
+)
+# Above this score, the site is visibly outdated enough that the
+# pitch is worth a session even if commerce markers are present.
+WEBSHOP_SKIP_SCORE_CUTOFF = 15
 
 PROMPT_TEMPLATE = (
     "Design lead {lead_id} for the sanity track. Read "
@@ -54,6 +72,36 @@ PROMPT_TEMPLATE = (
     "start; the per-lead procedure is in there. Walk it end to end "
     "and exit when the live URL renders cleanly. Do not ask for "
     "confirmation; the loop runs autonomously."
+)
+
+# Tools the per-lead procedure needs. `--permission-mode auto` keeps the
+# classifier active for anything outside this list. Mirrors the shape of
+# /generator's allowlist, with the bash patterns this track actually uses
+# (node for deploy.mjs, pnpm for sanity CLI, python3 for scan-DB lookups).
+ALLOWED_TOOLS = " ".join([
+    "Read", "Write", "Edit",
+    "WebFetch", "WebSearch",
+    "Bash(curl *)",
+    "Bash(node *)",
+    "Bash(npx *)",
+    "Bash(pnpm *)",
+    "Bash(python3 *)",
+    "Bash(uv run *)",
+    "Bash(mkdir *)", "Bash(cp *)", "Bash(mv *)", "Bash(rm *)",
+    "Bash(cd *)", "Bash(ls *)", "Bash(cat *)", "Bash(grep *)",
+    "Bash(head *)", "Bash(tail *)", "Bash(wc *)", "Bash(find *)",
+    "Bash(git add *)",
+    "Bash(git commit *)",
+    "Bash(git push)",
+    "Bash(git status *)",
+    "Bash(git log *)",
+    "Bash(git diff *)",
+])
+
+# Extra dirs the spawn needs read access to (cwd is sanity-generator/).
+EXTRA_DIRS = (
+    str(REPO_ROOT.parent / "scan"),
+    str(REPO_ROOT.parent / "generator"),
 )
 
 # Substring matches that signal the loop should stop and resume later.
@@ -121,7 +169,51 @@ def release_lock() -> None:
 # ─── candidate selection ─────────────────────────────────────────────
 
 
+def _is_active_webshop(con: sqlite3.Connection, business_id: int) -> bool:
+    """True iff the lead's latest snapshot looks like a running webshop
+    AND the score says the site is roughly maintained.
+
+    See "Lead-fit filter" in CLAUDE.md for the rationale. Falsey
+    behaviour on any data hiccup (no snapshot, missing file, decode
+    error) — we'd rather pitch a borderline lead than silently drop one.
+    """
+    row = con.execute(
+        """
+        SELECT sn.body_hash, s.score
+        FROM urls u
+        JOIN snapshots sn ON sn.url_id = u.id
+        LEFT JOIN scores s ON s.snapshot_id = sn.id
+        WHERE u.business_id = ? AND u.is_primary = 1
+        ORDER BY sn.fetched_at DESC
+        LIMIT 1
+        """,
+        (business_id,),
+    ).fetchone()
+    if not row:
+        return False
+    body_hash, score = row
+    if score is None or score >= WEBSHOP_SKIP_SCORE_CUTOFF:
+        return False
+    snap_path = SNAPSHOTS_DIR / f"{body_hash}.html.gz"
+    if not snap_path.exists():
+        return False
+    try:
+        with gzip.open(snap_path, "rb") as f:
+            body = f.read(512_000)  # 500 KB is plenty for head + early body
+    except (OSError, EOFError):
+        return False
+    return bool(WEBSHOP_MARKERS.search(body))
+
+
+def _has_decline_marker(business_id: int) -> bool:
+    return (LEADS_DIR / f"{business_id}.declined.json").exists()
+
+
 def candidates_from_registry() -> list[int]:
+    """Return built-demo lead ids, minus active webshops and prior declines.
+
+    Order is preserved so the loop walks lower ids first (oldest leads).
+    """
     if not REGISTRY_DB.exists():
         raise SystemExit(f"Registry DB not found: {REGISTRY_DB}")
     con = sqlite3.connect(str(REGISTRY_DB))
@@ -131,9 +223,16 @@ def candidates_from_registry() -> list[int]:
             "WHERE status='built' "
             "ORDER BY business_id"
         ).fetchall()
+        out: list[int] = []
+        for (bid,) in rows:
+            if _has_decline_marker(bid):
+                continue
+            if _is_active_webshop(con, bid):
+                continue
+            out.append(bid)
+        return out
     finally:
         con.close()
-    return [r[0] for r in rows]
 
 
 def deployed_lead_ids(sanity_state: dict) -> set[int]:
@@ -172,15 +271,22 @@ def run_lead(lead_id: int) -> tuple[int, bool]:
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     append_log(f"\n=== {lead_id} starting at {started} ===")
 
+    # Prompt goes via stdin so the variadic `--allowedTools` doesn't
+    # swallow it as a tool name. Same trick as /generator's loop.
     cmd = [
         "claude",
         "-p",
-        prompt,
-        "--output-format",
-        "text",
+        "--model", "claude-sonnet-4-6",
+        "--permission-mode", "auto",
+        "--allowedTools", ALLOWED_TOOLS,
+        "--output-format", "text",
     ]
+    for d in EXTRA_DIRS:
+        cmd.extend(["--add-dir", d])
+    append_log(f"=== cmd: {' '.join(cmd)} ===")
     proc = subprocess.Popen(
         cmd,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         cwd=str(REPO_ROOT),
@@ -188,6 +294,9 @@ def run_lead(lead_id: int) -> tuple[int, bool]:
         bufsize=1,
         text=True,
     )
+    assert proc.stdin is not None
+    proc.stdin.write(prompt)
+    proc.stdin.close()
 
     rate_limited = False
     assert proc.stdout is not None

@@ -83,16 +83,24 @@ function cfEnv() {
 }
 
 function lookupHash(businessId) {
+  const secret = process.env.NOPAGE_DEMO_SECRET ?? "";
   const r = spawnSync("python3", [
     "-c",
-    `
-import sqlite3, sys
+    `import sqlite3, sys, hmac, hashlib, os
 con = sqlite3.connect(sys.argv[1])
 row = con.execute('select url_hash from demos where business_id = ?', (int(sys.argv[2]),)).fetchone()
-sys.stdout.write(row[0] if row else '')
-`,
+if row:
+    sys.stdout.write(row[0])
+else:
+    sec = sys.argv[3]
+    if sec:
+        h = hmac.new(sec.encode(), str(int(sys.argv[2])).encode(), hashlib.sha256).hexdigest()[:8]
+        sys.stdout.write(h)
+    else:
+        sys.stdout.write('')`,
     registryDb,
     String(businessId),
+    secret,
   ]);
   if (r.status !== 0) {
     throw new Error(`Failed to query registry.db: ${r.stderr.toString()}`);
@@ -100,7 +108,7 @@ sys.stdout.write(row[0] if row else '')
   const hash = r.stdout.toString().trim();
   if (!hash) {
     throw new Error(
-      `No demos row for business_id=${businessId} in scan/data/registry.db.`,
+      `No demos row and no NOPAGE_DEMO_SECRET for business_id=${businessId}.`,
     );
   }
   return hash;
@@ -144,7 +152,6 @@ async function ensureSanityProject(leadState, brief) {
       body: JSON.stringify({
         displayName: brief.name,
         organizationId: SANITY_ORG_ID,
-        dataResidency: "eu",
       }),
     },
   );
@@ -248,7 +255,10 @@ async function importContent(projectId, hash, brief, leadState, force) {
     return;
   }
 
-  const assetDir = resolve(generatorRoot, "data", "repo", "d", hash);
+  // Prefer sanity-generator's own assets dir; fall back to generator's built output.
+  const sanityAssetsDir = resolve(repoRoot, "data", "assets", String(brief.businessId));
+  const generatorAssetsDir = resolve(generatorRoot, "data", "repo", "d", hash);
+  const assetDir = existsSync(sanityAssetsDir) ? sanityAssetsDir : generatorAssetsDir;
   console.log(`  uploading assets from ${assetDir}`);
 
   async function upload(filename, kind, ct) {
@@ -313,6 +323,8 @@ async function importContent(projectId, hash, brief, leadState, force) {
       ? { specialHours: withKeys(brief.specialHours.map((s) => ({ _type: "specialHourEntry", ...s })), "sh") }
       : {}),
     ...(brief.hoursNote ? { hoursNote: brief.hoursNote } : {}),
+    ...(brief.sourceUrl ? { sourceUrl: brief.sourceUrl } : {}),
+    ...(brief.sourceLabel ? { sourceLabel: brief.sourceLabel } : {}),
   };
   const createdCafe = await client.create(cafeDoc);
   leadState.cafeId = createdCafe._id;

@@ -10,6 +10,13 @@
       "cfDeployHookId": "1b76eae3-aff8-477f-ac4f-9bb709063ab1",
       "sanityWebhookId": "tyFQ1spsE6yYtpbn",
       "deployedAt": "2026-05-09T09:33:00.000Z"
+    },
+    "6787": {
+      "hash": "8d26cbff",
+      "businessId": 6787,
+      "name": "Bäckerei Meyer",
+      "sanityProjectId": "ou63bw3r",
+      "cafeId": "8Fo72T3ITFDW8AFu2vYrGy"
     }
   }
 }
